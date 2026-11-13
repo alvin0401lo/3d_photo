@@ -32,5 +32,5 @@ def test_streamlit_shell_renders_without_keys_or_provider_requests():
     app = AppTest.from_file(str(root / 'streamlit_ui.py')).run(timeout=15)
     assert not app.exception
     assert app.title[0].value == 'DepthFrame AI'
-    assert app.get('iframe')[0].proto.src == '/workspace/'
+    assert 'new URL("workspace/", document.baseURI)' in app.get('iframe')[0].proto.srcdoc
     assert 'private' in ' '.join(item.value for item in app.caption).lower()

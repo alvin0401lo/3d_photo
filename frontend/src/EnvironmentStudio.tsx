@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { ArrowRight, Globe, ImagePlus, LoaderCircle, Upload } from 'lucide-react';
-import { api, type Capabilities, type Project } from './types';
+import { api, apiUrl, type Capabilities, type Project } from './types';
 
 type Props = { projects: Project[]; project: Project | null; capabilities: Capabilities | null; workerAlive: boolean; busy: boolean; onSelect: (id: string) => void; onOpen: (project: Project) => void; onCreated: (project: Project) => void; onRefresh: () => Promise<unknown>; run: (action: () => Promise<void>) => Promise<void> };
 
@@ -41,7 +41,7 @@ export default function EnvironmentStudio({ projects, project, capabilities, wor
       {project?.job?.status === 'failed' && <p className="job-error" role="alert">{project.job.error}</p>}
       {project?.panorama && <button className="secondary open-environment" onClick={() => onOpen(project)}>Open 360° environment<ArrowRight size={15} /></button>}
     </div><aside className="environment-demo">
-      <h3>Look around an example</h3><img src="/api/panorama-example-photo" alt="Captured 360 degree landscape at Kiara dawn" /><p>A real, captured panorama lets you try the full 360° viewer locally.</p><button className="secondary" disabled={busy} onClick={() => run(async () => { const created = await api<Project>('/panorama-examples', { method: 'POST' }); onCreated(created); onOpen(created); await onRefresh(); })}>Try 360° example<ArrowRight size={15} /></button>
+      <h3>Look around an example</h3><img src={apiUrl("/panorama-example-photo")} alt="Captured 360 degree landscape at Kiara dawn" /><p>A real, captured panorama lets you try the full 360° viewer locally.</p><button className="secondary" disabled={busy} onClick={() => run(async () => { const created = await api<Project>('/panorama-examples', { method: 'POST' }); onCreated(created); onOpen(created); await onRefresh(); })}>Try 360° example<ArrowRight size={15} /></button>
       <small>Kiara 1 Dawn by Greg Zaal / <a href="https://polyhaven.com/a/kiara_1_dawn" target="_blank" rel="noreferrer">Poly Haven</a> · CC0. Captured panorama; not an AI result.</small>
       <div className="environment-import"><h3>Already have a panorama?</h3><p>Import a 2:1 equirectangular image, up to 8192 × 4096 pixels and 15 MB.</p><input className="visually-hidden" ref={panoInput} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Import panorama" onChange={e => { upload(e.target.files?.[0], 'panorama'); e.target.value = ''; }} /><button className="secondary" onClick={() => panoInput.current?.click()} disabled={busy}><Upload size={15} />Import panorama</button></div>
       <p className="environment-limits">360° means looking in every direction from one position. AI may introduce seams or inconsistent details. It does not produce a walkable 3D scene or recover the real hidden surroundings.</p>

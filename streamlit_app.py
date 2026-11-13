@@ -69,7 +69,7 @@ async def lifespan(app):
 
 
 async def icon(request):
-    return RedirectResponse("/workspace/favicon.svg")
+    return RedirectResponse("workspace/favicon.svg")
 
 
 app = st.App(

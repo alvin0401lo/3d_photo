@@ -10,13 +10,23 @@ export type Capabilities = { configuration_source?: 'streamlit-secrets' | 'local
 export type Health = { status: string; model_ready: boolean; worker: { alive: boolean; state: string }; mode: string };
 export const defaultSettings: Settings = { strength: 0.38, motion: 0.45, zoom: 1, quality: 'balanced', autoOrbit: false };
 
+export function apiUrl(url: string): string {
+  // Community Cloud strips /~/+/ before forwarding, so preserve the browser's prefix.
+  const root = window.location.pathname.replace(/\/workspace\/?$/, '/');
+  return `${root.endsWith('/') ? root : root + '/'}api${url}`;
+}
+
 export async function api<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch('/api' + url, { ...options, headers: { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...options.headers } });
+  const response = await fetch(apiUrl(url), { ...options, headers: { ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...options.headers } });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.error?.message || `Request failed (${response.status}).`);
   }
-  return response.json() as Promise<T>;
+  if (!response.headers.get('Content-Type')?.includes('application/json')) {
+    throw new Error('The hosting page was returned instead of the editor API. Refresh the Streamlit app and open the editor again.');
+  }
+  // Backend asset URLs are server-relative; resolve them through the same browser prefix.
+  return JSON.parse(await response.text(), (_key, value) => typeof value === 'string' && value.startsWith('/api/') ? apiUrl(value.slice(4)) : value) as T;
 }
 
 export function download(blob: Blob, name: string) {

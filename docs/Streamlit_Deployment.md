@@ -2,7 +2,7 @@
 
 Repository: **https://github.com/alvin0401lo/3d_photo**
 
-The deployment uses Streamlit 1.67's supported `st.App` ASGI integration. `streamlit_app.py` mounts the existing FastAPI endpoints and compiled React/Three.js editor on the same port. `streamlit_ui.py` provides the Streamlit page; `/workspace/` opens the full editor. Node is needed to rebuild the editor locally, but not at cloud startup because `web_dist/` contains the compiled assets.
+The deployment uses Streamlit 1.67's supported `st.App` ASGI integration. `streamlit_app.py` mounts the existing FastAPI endpoints and compiled React/Three.js editor on the same port. `streamlit_ui.py` provides the Streamlit page; its **Open full editor** link opens the editor within the current application's URL prefix. Node is needed to rebuild the editor locally, but not at cloud startup because `web_dist/` contains the compiled assets.
 
 ## Community Cloud settings
 
@@ -34,6 +34,25 @@ Select **Advanced settings → Python version → 3.12** when deploying. Communi
 The root requirements file requires a NumPy wheel, so unsupported runtimes fail promptly rather than attempting a long source build. This does not select the cloud Python version; the deployment setting is still required. If the log already reports Python 3.12, inspect the complete pip error and wheel/platform details before changing package versions.
 
 If uv reports that `setuptools==84.2.1` is unavailable on the PyTorch index, use the updated root `requirements.txt`. It uses PyPI for ordinary dependencies and direct official CPU wheel URLs for torch/torchvision. This avoids uv's first-index rule selecting an incomplete PyTorch mirror for unrelated packages. The wheel URLs target CPython 3.12 on Linux x86_64 (Cloud) or Windows AMD64 (local).
+
+## Editor keeps loading after the Streamlit page opens
+
+Community Cloud serves the actual app behind `/~/+/`, while the public root serves the platform's page. The editor bootstrap, compiled scripts/styles/fonts, API requests, and returned asset/download URLs must preserve the browser-visible prefix. Absolute root paths such as `/workspace/`, `/assets/...`, and `/api/...` skip that prefix and can return a platform HTML page instead. The editor now resolves its own paths relative to the browser URL, including the full editor link and model downloads.
+
+Use **Open full editor** from the updated app instead of manually appending `/workspace/` to the public cloud URL. After Cloud pulls the fix, refresh the page with Ctrl+Shift+R. If it still serves the old release, reboot the cloud app after saving any needed results. No Python-version change is required for this routing fix.
+
+The regression fixture `scripts/streamlit_prefix_check_server.py` reproduces a proxy that strips `/~/+/` without setting ASGI `root_path`; requests outside that prefix intentionally return platform HTML. Start it locally using isolated test storage, then run the browser regression:
+
+```powershell
+$env:DEPTHFRAME_STORAGE="$PWD/artifacts/prefix-check-storage"
+.\.venv\Scripts\python.exe -m uvicorn scripts.streamlit_prefix_check_server:app --host 127.0.0.1 --port 8767
+# In a separate terminal:
+$env:DEPTHFRAME_TEST_BASE_URL='http://127.0.0.1:8767'
+$env:DEPTHFRAME_TEST_ROOT_PATH='/~/+/'
+npm.cmd --prefix frontend run test:e2e -- streamlit.spec.ts
+```
+
+The prefix regression passed in a real browser: the embedded editor, separate full-editor tab, example image, model loading/orbit, PNG capture, and GLB download all retained the stripped prefix. The normal browser suite passed nine cases initially; its one timed-out drag case passed on rerun. Backend/Streamlit shell (47 cases), geometry (5 cases), production build, compilation, dependency consistency, and deployment-file type checks also passed. Local evidence: `artifacts/cloud-prefix-browser-recheck.log`, `direct-browser.log`, `direct-browser-recheck.log`, and `streamlit-cloud-prefix.png`. These verify the fix locally; the private Cloud deployment still needs a browser refresh after pulling the new commit.
 
 ## Run locally through Streamlit
 
