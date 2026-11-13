@@ -49,7 +49,8 @@ async def local_boundary(request: Request, call_next):
                 same_origin = parsed.scheme in {"http", "https"} and parsed.netloc == request.headers.get("host") and not parsed.username and parsed.path in {"", "/"} and not parsed.query and not parsed.fragment
             except ValueError:
                 same_origin = False
-        if origin and origin not in allowed and not same_origin:
+        origin_allowed = same_origin if os.environ.get("DEPTHFRAME_HOSTED") == "1" else origin in allowed or same_origin
+        if origin and not origin_allowed:
             return JSONResponse({"error": {"code": "origin_denied", "message": "This local workspace does not accept requests from other websites."}}, status_code=403)
         try:
             if int(request.headers.get("content-length", "0")) > MAX_BYTES + 1024 * 1024:

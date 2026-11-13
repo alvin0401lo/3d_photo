@@ -19,6 +19,9 @@ def test_hosted_api_accepts_same_origin_and_rejects_other_or_malformed_origins(c
     assert client.post('/api/examples', headers=headers).status_code == 201
     for origin in ['https://evil.example', 'null', 'http://[', 'http://127.0.0.1:8501/?query=bad']:
         assert client.post('/api/examples', headers={**headers, 'Origin': origin}).status_code == 403
+    monkeypatch.setenv('DEPTHFRAME_HOSTED', '1')
+    assert client.post('/api/examples', headers=headers).status_code == 201
+    assert client.post('/api/examples', headers={**headers, 'Origin': 'http://localhost:5173'}).status_code == 403
     monkeypatch.delenv('DEPTHFRAME_SAME_ORIGIN')
     assert client.post('/api/examples', headers=headers).status_code == 403
 
