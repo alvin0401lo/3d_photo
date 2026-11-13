@@ -25,6 +25,16 @@ OPENAI_IMAGE_TIMEOUT = 300
 
 Either provider can be omitted. Examples and panorama import do not require a key. Generation requires the existing consent checkbox and uses the configured provider account's credits. Keys are read on the server and are never included in the frontend bundle. Live provider generation is not established by contract mocks or captured/sample assets.
 
+## Installation stops at NumPy metadata
+
+If the log downloads `numpy-2.2.5.tar.gz` and stays at `Preparing metadata (pyproject.toml)`, pip is attempting a source build instead of using a wheel. Check the `Using Python ...` line near the top of the deployment log. This release is validated with **Python 3.12**, for which NumPy 2.2.5 provides Linux wheels. Newer interpreters such as Python 3.14 do not have a matching wheel for this NumPy release.
+
+Select **Advanced settings → Python version → 3.12** when deploying. Community Cloud does not let an existing app change Python in place: save any needed results and private Secrets, record its settings/subdomain, then delete the failed cloud app and create it again from the same repository, branch, and entrypoint with Python 3.12 selected. Deleting the cloud app does not delete the GitHub repository. Rebooting alone keeps the old Python version. See [Streamlit's Python version instructions](https://docs.streamlit.io/deploy/streamlit-community-cloud/manage-your-app/upgrade-python).
+
+The root requirements file requires a NumPy wheel, so unsupported runtimes fail promptly rather than attempting a long source build. This does not select the cloud Python version; the deployment setting is still required. If the log already reports Python 3.12, inspect the complete pip error and wheel/platform details before changing package versions.
+
+If uv reports that `setuptools==84.2.1` is unavailable on the PyTorch index, use the updated root `requirements.txt`. It uses PyPI for ordinary dependencies and direct official CPU wheel URLs for torch/torchvision. This avoids uv's first-index rule selecting an incomplete PyTorch mirror for unrelated packages. The wheel URLs target CPython 3.12 on Linux x86_64 (Cloud) or Windows AMD64 (local).
+
 ## Run locally through Streamlit
 
 ```powershell

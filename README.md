@@ -13,6 +13,8 @@ Use **https://share.streamlit.io/** → **Create app**, then select:
 | Main file | `streamlit_app.py` |
 | Python | `3.12` |
 
+Choose Python **3.12 explicitly in Advanced settings**. If installation downloads `numpy-2.2.5.tar.gz` or stalls at NumPy metadata, check the Python version at the top of the logs. Changing an existing app's Python requires deleting and redeploying the cloud app; rebooting does not change it. Save any needed results and Secrets first. See [installation troubleshooting](docs/Streamlit_Deployment.md#installation-stops-at-numpy-metadata).
+
 Keep the running app **private**: this is a single-user workspace. Configure provider keys in Streamlit **Secrets**, using `.streamlit/secrets.example.toml` as the template. No real credentials or uploaded photos are included in this repository. See [deployment details](docs/Streamlit_Deployment.md).
 
 The first startup downloads the pinned Depth Anything V2 Small model. Node is not required by the hosted app; the compiled React/Three.js editor is included in `web_dist/`.
