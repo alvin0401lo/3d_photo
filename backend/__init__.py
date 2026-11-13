@@ -1,0 +1,1 @@
+"""DepthFrame AI local application."""

@@ -1,0 +1,32 @@
+{
+  "name": "depthframe-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource/inter": "5.2.5",
+    "@react-three/fiber": "9.1.2",
+    "lucide-react": "0.511.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "three": "0.176.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "22.15.21",
+    "@types/react": "19.1.5",
+    "@types/react-dom": "19.1.5",
+    "@types/three": "0.176.0",
+    "@vitejs/plugin-react": "4.4.1",
+    "typescript": "5.8.3",
+    "vite": "6.4.6",
+    "vitest": "5.1.0"
+  }
+}

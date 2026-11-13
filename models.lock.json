@@ -1,0 +1,7 @@
+{
+  "model": "Depth Anything V2 Small",
+  "license": "Apache-2.0",
+  "upstream_commit": "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf",
+  "model_revision": "03876f8651c73a60fe4c2c48294e09fcb6838fcf",
+  "sha256": "715fade13be8f229f8a70cc02066f656f2423a59effd0579197bbf57860e1378"
+}
