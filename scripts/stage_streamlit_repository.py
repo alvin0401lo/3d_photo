@@ -14,7 +14,7 @@ files = []
 for name in ['streamlit_app.py', 'streamlit_ui.py', 'requirements.txt', 'models.lock.json', 'THIRD_PARTY_NOTICES.md', '.gitignore', '.env.example', 'Setup-DepthFrame.ps1', 'Start-DepthFrame.cmd', 'Start-DepthFrame.ps1', 'Stop-DepthFrame.cmd', 'Start-Streamlit.cmd', 'Test-DepthFrame.ps1']:
     files.append(Path(name))
 files += [Path('.streamlit/config.toml'), Path('.streamlit/secrets.example.toml')]
-for pattern in ['backend/**/*.py', 'backend/requirements*.txt', 'frontend/src/**/*', 'frontend/public/**/*', 'frontend/tests/**/*.ts', 'frontend/*.json', 'frontend/*.ts', 'scripts/*.py', 'scripts/*.mjs', 'examples/*', 'web_dist/**/*']:
+for pattern in ['backend/**/*.py', 'backend/requirements*.txt', 'frontend/src/**/*', 'frontend/public/**/*', 'frontend/tests/**/*.ts', 'frontend/*.json', 'frontend/*.ts', 'frontend/*.html', 'scripts/*.py', 'scripts/*.mjs', 'examples/*', 'web_dist/**/*']:
     files.extend(path.relative_to(ROOT) for path in ROOT.glob(pattern) if path.is_file())
 for name in ['Streamlit_Deployment.md', 'Object_360.md', 'Environment_360.md', 'User_Guide.md']:
     files.append(Path('docs') / name)
