@@ -35,9 +35,9 @@ def openai_config():
     return {"api_key": values.get("OPENAI_API_KEY", "").strip(), "model": model, "timeout": timeout}
 
 
-def meshy_config():
-    values = private_settings(("MESHY_API_KEY", "MESHY_MODEL"))
-    model = values.get("MESHY_MODEL") or "meshy-7.1"
-    if model not in {"meshy-7.1", "meshy-6", "meshy-6-lite"}:
-        raise ValueError("Choose a supported Meshy image-to-3D model in .env.example.")
-    return {"api_key": values.get("MESHY_API_KEY", "").strip(), "model": model}
+def tripo_config():
+    values = private_settings(("TRIPO_API_KEY", "TRIPO_MODEL"))
+    model = values.get("TRIPO_MODEL") or "v3.1-20260211"
+    if model != "v3.1-20260211":
+        raise ValueError("Choose the supported Tripo image-to-3D model in .env.example.")
+    return {"api_key": values.get("TRIPO_API_KEY", "").strip(), "model": model}

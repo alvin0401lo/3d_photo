@@ -33,7 +33,7 @@ async def lifespan(app):
         secrets = st.secrets.to_dict()
     except FileNotFoundError:
         secrets = {}
-    for name in ("OPENAI_API_KEY", "OPENAI_IMAGE_MODEL", "OPENAI_IMAGE_TIMEOUT", "MESHY_API_KEY", "MESHY_MODEL"):
+    for name in ("OPENAI_API_KEY", "OPENAI_IMAGE_MODEL", "OPENAI_IMAGE_TIMEOUT", "TRIPO_API_KEY", "TRIPO_MODEL"):
         if name in secrets:
             os.environ[name] = str(secrets[name])
     store.init()

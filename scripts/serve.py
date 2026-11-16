@@ -47,7 +47,7 @@ def main():
                     time.sleep(0.5)
             else:
                 raise RuntimeError("DepthFrame did not start within 20 seconds. Check storage/logs.")
-            print("\nDepthFrame AI is ready: http://127.0.0.1:8000\nCPU depth stays local. Optional OpenAI / Meshy generation sends selected input only when requested with consent.\nPress Ctrl+C to stop both services.\n", flush=True)
+            print("\nDepthFrame AI is ready: http://127.0.0.1:8000\nCPU depth stays local. Optional OpenAI / Tripo generation sends selected input only when requested with consent.\nPress Ctrl+C to stop both services.\n", flush=True)
             if not args.no_browser: webbrowser.open("http://127.0.0.1:8000")
             while worker.poll() is None and server.poll() is None and not stop_file.exists():
                 time.sleep(1)

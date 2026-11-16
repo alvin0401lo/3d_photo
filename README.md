@@ -23,7 +23,7 @@ The first startup downloads the pinned Depth Anything V2 Small model. Node is no
 
 - Local CPU relative-depth estimation and an interactive depth photo with PNG/video/GLB/depth exports.
 - Full 360° equirectangular panorama viewing, import, and a captured landscape example.
-- Subject crop selection and Meshy image-to-3D integration, plus an orbitable credited sample character.
+- Subject crop selection and Tripo image-to-3D integration, plus an orbitable credited sample character.
 - Optional OpenAI panorama generation, with explicit external-processing consent.
 
 Provider generation uses your API credits and requires the appropriate key. A single image does not establish the real hidden sides/back of a person. Captured panoramas and pre-existing 3D samples are labeled; they are not examples of live photo-to-3D generation. API contract mocks do not verify live provider quality.

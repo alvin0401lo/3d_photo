@@ -61,18 +61,18 @@ test('real sample character orbits through all sides, holds drag, resets, suppor
   } finally { if (id) await request.delete('/api/projects/' + id); }
 });
 
-test('subject box and confirmed crop persist; mocked Meshy submission sends only confirmed selection once', async ({ page, request }) => {
+test('subject box and confirmed crop persist; mocked Tripo submission sends only confirmed selection once', async ({ page, request }) => {
   const example = await (await request.post('/api/object-examples')).json();
   const fixtureImage = await (await request.get(example.assets.image)).body();
   const created = await request.post('/api/projects', { multipart: { file: { name: 'subject-workflow.jpg', mimeType: 'image/jpeg', buffer: fixtureImage } } });
   const project = await created.json(); let submitted = 0, generated = false;
   try {
     await page.addInitScript(id => localStorage.setItem('depthframe-project', id), project.id);
-    await page.route('**/api/capabilities', async route => { const response = await route.fetch(); const body = await response.json(); body.object_generation = { configured: true, model: 'meshy-7.1', error: null }; await route.fulfill({ json: body }); });
-    await page.route('**/api/projects?limit=*', async route => { const response = await route.fetch(); const body = await response.json(); if (generated) body.items = body.items.map((p: { id: string }) => p.id === project.id ? { ...p, object: { ...example.object, provider: 'meshy', ai_generated: true, model: 'EXPLICIT TEST FIXTURE' } } : p); await route.fulfill({ json: body }); });
-    await page.route(`**/api/projects/${project.id}/object-jobs`, async route => { expect(route.request().postDataJSON()).toEqual({ pose: 'a-pose', allow_external_processing: true }); expect(route.request().headers()['idempotency-key']).toBeTruthy(); submitted++; generated = true; await route.fulfill({ status: 202, json: { id: 'mocked-task' } }); });
+    await page.route('**/api/capabilities', async route => { const response = await route.fetch(); const body = await response.json(); body.object_generation = { configured: true, model: 'v3.1-20260211', provider: 'tripo', error: null }; await route.fulfill({ json: body }); });
+    await page.route('**/api/projects?limit=*', async route => { const response = await route.fetch(); const body = await response.json(); if (generated) body.items = body.items.map((p: { id: string }) => p.id === project.id ? { ...p, object: { ...example.object, provider: 'tripo', ai_generated: true, model: 'EXPLICIT TEST FIXTURE' } } : p); await route.fulfill({ json: body }); });
+    await page.route(`**/api/projects/${project.id}/object-jobs`, async route => { expect(route.request().postDataJSON()).toEqual({ orientation: 'align_image', allow_external_processing: true }); expect(route.request().headers()['idempotency-key']).toBeTruthy(); submitted++; generated = true; await route.fulfill({ status: 202, json: { id: 'mocked-task' } }); });
     await page.goto(process.env.DEPTHFRAME_TEST_EDITOR_PATH || '/'); await page.getByRole('button', { name: 'Object 360°', exact: true }).click();
-    const generate = page.getByRole('button', { name: 'Generate object with Meshy', exact: true });
+    const generate = page.getByRole('button', { name: 'Generate object with Tripo', exact: true });
     await expect(generate).toBeDisabled();
     const selector = page.getByTestId('subject-selector'); const box = (await selector.boundingBox())!;
     await page.mouse.move(box.x + box.width * .2, box.y + box.height * .1); await page.mouse.down(); await page.mouse.move(box.x + box.width * .8, box.y + box.height * .9, { steps: 8 }); await page.mouse.up();
@@ -81,11 +81,11 @@ test('subject box and confirmed crop persist; mocked Meshy submission sends only
     const saved = await (await request.get('/api/projects/' + project.id)).json();
     expect(saved.subject.width).toBeCloseTo(.6, 2); expect(saved.subject.height).toBeCloseTo(.8, 2);
     await page.reload(); await page.getByRole('button', { name: 'Object 360°', exact: true }).click();
-    await expect(page.getByAltText('Confirmed crop sent to Meshy')).toBeVisible();
+    await expect(page.getByAltText('Confirmed subject crop')).toBeVisible();
     await expect(generate).toBeDisabled(); expect(submitted).toBe(0);
-    await page.getByLabel('Object pose', { exact: true }).selectOption('a-pose'); await page.getByRole('checkbox').check();
+    await page.getByLabel('Model orientation', { exact: true }).selectOption('align_image'); await page.getByRole('checkbox').check();
     await generate.click();
-    await expect(page.getByText('AI reconstructed subject · Meshy', { exact: true })).toBeVisible();
+    await expect(page.getByText('AI reconstructed subject · Tripo', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Reset object camera', exact: true })).toBeEnabled();
     expect(submitted).toBe(1);
   } finally { await request.delete('/api/projects/' + project.id); await request.delete('/api/projects/' + example.id); }

@@ -98,7 +98,7 @@ def run():
                     process.terminate()
                 process.join(timeout=5)
                 cancelled = store.cancel_requested(current["id"])
-                store.update_job(current["id"], status="cancelled" if cancelled else "failed", stage="Cancelled" if cancelled else "Processing interrupted", error=None if cancelled else ("Remote processing stopped or exceeded its deadline. Check your provider account before starting another task; a saved Meshy task can be resumed." if output_group in {"panorama", "object"} else "CPU inference exceeded its deadline or stopped unexpectedly. Retry with a smaller inference size."))
+                store.update_job(current["id"], status="cancelled" if cancelled else "failed", stage="Cancelled" if cancelled else "Processing interrupted", error=None if cancelled else ("Remote processing stopped or exceeded its deadline. Check your provider account before starting another task; a saved Tripo task can be resumed." if output_group in {"panorama", "object"} else "CPU inference exceeded its deadline or stopped unexpectedly. Retry with a smaller inference size."))
                 process = None
                 shutil.rmtree(store.project_dir(current["project_id"]) / output_group / (current["id"] + ".tmp"), ignore_errors=True)
                 current = None

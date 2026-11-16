@@ -16,8 +16,8 @@ The deployment uses Streamlit 1.67's supported `st.App` ASGI integration. `strea
 Minimal optional secrets:
 
 ```toml
-MESHY_API_KEY = "your-private-meshy-key"
-MESHY_MODEL = "meshy-7.1"
+TRIPO_API_KEY = "your-private-tripo-key"
+TRIPO_MODEL = "v3.1-20260211"
 OPENAI_API_KEY = "your-private-openai-key"
 OPENAI_IMAGE_MODEL = "gpt-image-2.5-sunburst"
 OPENAI_IMAGE_TIMEOUT = 300

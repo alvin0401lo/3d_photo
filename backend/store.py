@@ -134,7 +134,7 @@ def enqueue(project_id, request_key=None, inference_size=384, job_type="depth", 
             raise OverflowError("The queue is full. Wait for a project to finish.")
         job_id = uuid.uuid4().hex
         now = time.time()
-        stage = {"depth": "Waiting for CPU", "panorama": "Waiting for OpenAI", "object": "Waiting for Meshy"}[job_type]
+        stage = {"depth": "Waiting for CPU", "panorama": "Waiting for OpenAI", "object": "Waiting for Tripo"}[job_type]
         db.execute("INSERT INTO jobs (id,project_id,status,stage,created,updated,request_key,inference_size,job_type,parameters) VALUES (?,?,?,?,?,?,?,?,?,?)", (job_id, project_id, "queued", stage, now, now, request_key, inference_size, job_type, json.dumps(parameters or {})))
         return job_dict(db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone())
 

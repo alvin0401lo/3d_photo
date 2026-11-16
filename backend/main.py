@@ -21,7 +21,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from . import store
 from .images import MAX_BYTES, decode
-from .config import openai_config, meshy_config
+from .config import openai_config, tripo_config
 from .objects import crop_subject
 
 
@@ -102,10 +102,10 @@ def capabilities():
     except ValueError as exc:
         image_api = {"configured": False, "model": None, "error": str(exc)}
     try:
-        config = meshy_config()
-        object_api = {"configured": bool(config["api_key"]), "model": config["model"], "provider": "meshy", "error": None}
+        config = tripo_config()
+        object_api = {"configured": bool(config["api_key"]), "model": config["model"], "provider": "tripo", "error": None}
     except ValueError as exc:
-        object_api = {"configured": False, "model": None, "provider": "meshy", "error": str(exc)}
+        object_api = {"configured": False, "model": None, "provider": "tripo", "error": str(exc)}
     return {"depth": True, "environment_360": True, "panorama_generation": image_api, "object_generation": object_api, "configuration_source": "streamlit-secrets" if os.environ.get("DEPTHFRAME_HOSTED") == "1" else "local-env", "multi_view": False, "multi_view_reason": "A panorama supports looking around a fixed viewpoint. Walkable multi-view reconstruction is not available.", "model": "Depth Anything V2 Small", "max_upload_mb": 15, "max_dimension": 4096, "max_panorama_dimension": 8192, "exports": ["original", "depth16", "preview", "raw", "bundle", "png", "glb", "browser-video", "panorama"]}
 
 
@@ -323,7 +323,7 @@ def select_subject(project_id: str, body: SubjectSelection):
 
 class ObjectRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    pose: str = Field(default="preserve", pattern="^(preserve|a-pose|t-pose)$")
+    orientation: str = Field(default="default", pattern="^(default|align_image)$")
     allow_external_processing: bool = False
 
 
@@ -333,15 +333,15 @@ def generate_object(project_id: str, body: ObjectRequest, request: Request):
     if project['kind'] != 'photo' or not project['subject']:
         raise HTTPException(422, 'Draw and confirm a selection around one person or object first.')
     if not body.allow_external_processing:
-        raise HTTPException(422, 'Allow sending the selected crop to Meshy and using API credits.')
+        raise HTTPException(422, 'Allow sending the selected crop to Tripo and using API credits.')
     try:
-        config = meshy_config()
+        config = tripo_config()
         if not config['api_key']:
-            raise ValueError('Add MESHY_API_KEY to your private local .env file for Object 360 generation.')
+            raise ValueError('Add TRIPO_API_KEY to your private local .env file for Object 360 generation.')
     except ValueError as exc:
         raise HTTPException(503, str(exc)) from exc
     try:
-        return store.enqueue(project_id, request.headers.get('idempotency-key', '')[:128] or None, job_type='object', parameters={**body.model_dump(), 'selection': {key: project['subject'][key] for key in ('x', 'y', 'width', 'height')}, 'model': config['model'], 'deadline_seconds': 930})
+        return store.enqueue(project_id, request.headers.get('idempotency-key', '')[:128] or None, job_type='object', parameters={**body.model_dump(), 'selection': {key: project['subject'][key] for key in ('x', 'y', 'width', 'height')}, 'model': config['model'], 'deadline_seconds': 600})
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
     except OverflowError as exc:
@@ -354,14 +354,16 @@ def generate_object(project_id: str, body: ObjectRequest, request: Request):
 def resume_object(job_id: str):
     current = job(job_id)
     if current['job_type'] != 'object' or not current['remote_id'] or current['status'] != 'failed':
-        raise HTTPException(409, 'Only an interrupted Meshy task with a saved provider task ID can be resumed.')
+        raise HTTPException(409, 'Only an interrupted Tripo task with a saved provider task ID can be resumed.')
+    if current['parameters'].get('model') != 'v3.1-20260211':
+        raise HTTPException(409, 'This saved task belongs to the previous image-to-3D provider and cannot be resumed by Tripo.')
     with store.connection() as db:
         db.execute('BEGIN IMMEDIATE')
         if db.execute("SELECT id FROM jobs WHERE project_id=? AND status IN ('queued','running')", (current['project_id'],)).fetchone():
             raise HTTPException(409, 'Wait for this project to finish processing.')
         if db.execute("SELECT COUNT(*) FROM jobs WHERE status IN ('queued','running')").fetchone()[0] >= 5:
             raise HTTPException(429, 'The queue is full.')
-        db.execute("UPDATE jobs SET status='queued',stage='Resuming existing Meshy task',cancel=0,error=NULL,updated=? WHERE id=? AND status='failed'", (time.time(), job_id))
+        db.execute("UPDATE jobs SET status='queued',stage='Resuming existing Tripo task',cancel=0,error=NULL,updated=? WHERE id=? AND status='failed'", (time.time(), job_id))
     return job(job_id)
 
 

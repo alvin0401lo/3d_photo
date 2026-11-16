@@ -15,7 +15,7 @@ That bypass applies only to this invocation of the local script. The CMD launche
 
 ## Create a 3D photo
 
-For selecting a person/object and orbiting around a generated model, choose **Object 360°** instead and follow the [Object 360 guide](Object_360.md). It uses Meshy's separate API account and credits. The local **Try 3D person example** action demonstrates orbiting with a credited pre-existing model.
+For selecting a person/object and orbiting around a generated model, choose **Object 360°** instead and follow the [Object 360 guide](Object_360.md). It uses Tripo's separate API account and credits. The local **Try 3D person example** action demonstrates orbiting with a credited pre-existing model.
 
 1. Choose **New photo**, drag a photo into the workspace, or select **Try example photo**.
 2. Use a static JPG, PNG, or WebP, up to 15 MB, with each side between 32 and 4096 pixels. Actual file contents are checked. Animated files are rejected.

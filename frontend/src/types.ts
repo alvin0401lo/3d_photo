@@ -6,7 +6,7 @@ export type Subject = Region & { token: string; assets: { preview: string } };
 export type ObjectResult = { job_id: string; provider: string; ai_generated: boolean; model: string; assets: Record<string, string>; warning: string };
 export type Job = { id: string; project_id: string; job_type: 'depth' | 'panorama' | 'object'; remote_id: string | null; status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'; stage: string; progress: number; cancel: number; error: string | null; result: Depth | Panorama | ObjectResult | null };
 export type Project = { id: string; kind: 'photo' | 'panorama'; name: string; created: number; width: number; height: number; revision: number; settings: Settings; assets: Record<string, string>; depth: Depth | null; panorama: Panorama | null; object: ObjectResult | null; subject: Subject | null; job: Job | null };
-export type Capabilities = { configuration_source?: 'streamlit-secrets' | 'local-env'; panorama_generation: { configured: boolean; model: string | null; error: string | null }; object_generation?: { configured: boolean; model: string | null; error: string | null } };
+export type Capabilities = { configuration_source?: 'streamlit-secrets' | 'local-env'; panorama_generation: { configured: boolean; model: string | null; error: string | null }; object_generation?: { configured: boolean; model: string | null; provider?: string; error: string | null } };
 export type Health = { status: string; model_ready: boolean; worker: { alive: boolean; state: string }; mode: string };
 export const defaultSettings: Settings = { strength: 0.38, motion: 0.45, zoom: 1, quality: 'balanced', autoOrbit: false };
 

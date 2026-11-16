@@ -1,6 +1,6 @@
 # Object 360°: orbit around a selected person
 
-Open **http://127.0.0.1:8000**, then choose **Object 360°**. This workflow selects a subject from a photograph and uses Meshy's image-to-3D API to create a model you can orbit around. It is separate from Environment 360°, which looks around a panorama from one position.
+Open **http://127.0.0.1:8000**, then choose **Object 360°**. Draw a box around a person or object, confirm the crop, and generate a textured 3D model with Tripo. Drag the result to orbit around it. This is separate from Environment 360°, which looks around a panorama from one position.
 
 ## Try the controls without an account
 
@@ -8,41 +8,41 @@ Click **Try 3D person example**. Drag on the model to orbit through its front, s
 
 This demo uses the pre-existing **Cesium Man** sample by Cesium, CC BY 4.0, from the Khronos glTF sample collection. The Cesium logo retains its separate trademark notice. The sample was not generated from the source screenshot or from your photo. It verifies the viewer, not the quality of AI person reconstruction.
 
-## Configure Meshy privately
+## Configure Tripo privately
 
-1. Create a Meshy account and an API key using [Meshy's official instructions](https://docs.meshy.ai/en/api/authentication). API usage requires Meshy API credits; see [current API pricing](https://docs.meshy.ai/en/api/pricing).
-2. Copy `.env.example` to `.env` in the application folder, or add the following entries to an existing `.env` while preserving any OpenAI settings:
+1. Create a Tripo account and API key using [Tripo's authentication guide](https://developers.tripo3d.ai/en/docs/authentication). Image-to-3D generation uses credits from your Tripo account; check the [current pricing](https://developers.tripo3d.ai/en/docs/billing).
+2. Copy .env.example to .env in the application folder, or add these entries to your existing .env while preserving any OpenAI settings:
 
-   ```dotenv
-   MESHY_API_KEY=your_private_key_here
-   MESHY_MODEL=meshy-7.1
-   ```
+       TRIPO_API_KEY=your_private_key_here
+       TRIPO_MODEL=v3.1-20260211
 
-3. Keep the real key private. Do not paste it into chat or commit `.env`. This is a separate key and account from OpenAI. The UI checks whether it is present automatically; presence does not establish authentication, credits, or model access.
+3. Keep the real key private. Do not paste it into chat or commit .env. The Tripo key and credits are separate from OpenAI. The UI checks whether a key is present; this does not prove authentication, credits, or model access.
 
-The integration also accepts `meshy-6` and `meshy-6-lite` in `MESHY_MODEL`. Environment variables override `.env` entries. Requests use the official `api.meshy.ai` endpoint.
+For Streamlit Community Cloud, add TRIPO_API_KEY and TRIPO_MODEL under **App settings → Secrets** using .streamlit/secrets.example.toml as the format. Do not put a real key in GitHub.
 
 ## Select and generate
 
-1. Choose an existing ordinary photo or **Upload a reference**. This upload does not automatically run CPU depth inference. Use a clear photo of one person with the full body visible where possible.
+1. Choose an existing ordinary photo or **Upload a reference**. Use a clear photo of one person with the full body visible where possible.
 2. Drag a box around the person/object. Adjust Left, Top, Width, and Height percentages with the numeric fields if needed. **Use whole photo** is useful when the image already contains one isolated subject.
-3. Click **Confirm selection** and inspect **Confirmed input**. This is a rectangular crop, not precise automatic person segmentation. Exclude unrelated people and distracting objects. Only the confirmed crop is sent; original photo metadata is removed. Each crop must be at least 32 pixels wide and high; the submitted crop is reduced to at most 2048 pixels per side.
-4. Choose pose guidance. The default omits a forced pose; A-pose and T-pose request those character poses from Meshy. The model may still interpret pose differently from the photo.
-5. Check the consent box, then click **Generate object with Meshy**. This sends the crop to Meshy and uses your API credits. There is no paid request on screen opening or crop confirmation.
-6. Keep DepthFrame running. When the task completes, the app saves the GLB and its input/manifest locally, then displays it in the orbit viewer. Closing the browser does not stop the worker. The source photo, any depth result, and any panorama are retained.
+3. Click **Confirm selection** and inspect **Confirmed input**. This is a rectangular crop, not precise automatic person segmentation. Exclude unrelated people and distracting objects. Only the confirmed crop is sent after consent; original photo metadata is removed. Each crop must be at least 32 pixels wide and high and is reduced to at most 2048 pixels per side.
+4. Choose automatic model orientation or align the model to the input view.
+5. Check the consent box, then click **Generate object with Tripo**. The confirmed crop is uploaded to Tripo and the image-to-3D task uses Tripo API credits. No paid generation request is made when opening the screen or confirming a crop.
+6. Keep DepthFrame running. When the task completes, the app saves the GLB and its input/manifest locally, then displays it in the orbit viewer. Closing the browser does not stop the worker.
 
 Changes to the selection clear consent and require confirmation before another generation. Previously generated models stay tied to their original confirmed crop; changing a crop does not regenerate a model automatically.
 
 ## Failures and cancellation
 
-The app submits once and saves the provider task ID before polling. There is no automatic submission retry. If a task is interrupted after its ID is saved, **Resume existing Meshy task** reconnects to that task without starting a second generation. If submission disconnected before an ID was received, check your Meshy dashboard before creating another task.
+The app uploads the crop and submits one generation request, saving the returned Tripo task ID before polling. It does not automatically retry a generation request. If submission disconnects before a task ID is received, check your Tripo dashboard before starting another task. If a task ID was saved, **Resume existing Tripo task** checks that same task instead of generating another model.
 
-Cancellation requests deletion of a known provider task when the worker observes it. Meshy may already have used credits. A worker shutdown or local timeout can leave remote processing active; inspect the provider dashboard. Generated model downloads are limited to 64 MB and must be self-contained GLB scenes; models requiring separate resources or unsupported compression are rejected with an error.
+Cancellation stops this app's polling and local processing. It does not send a provider cancellation request, so Tripo may continue the task and charge credits if it succeeds. Check your Tripo dashboard. A worker shutdown or timeout can leave remote processing active. Generated downloads are limited to 64 MB and must be self-contained GLB scenes; models requiring separate resources or unsupported compression are rejected.
+
+Previously saved Meshy tasks cannot be resumed through the Tripo integration. Completed models already saved in a project remain available.
 
 ## Accuracy and validation
 
-A single photo does not reveal the person's real sides/back. The reconstruction invents hidden surfaces, and face, hair, fingers, clothing, proportions and pose may differ. It is not an accurate body scan, identity guarantee, or rigged/animated avatar workflow. Multiple real views would provide stronger evidence for reconstruction; this release accepts one selected crop.
+A single photo does not reveal the person's real sides/back. The reconstruction infers hidden surfaces, and face, hair, fingers, clothing, proportions and pose may differ. It is not an accurate body scan, identity guarantee, or rigged/animated avatar workflow. Multiple real views would provide stronger evidence for reconstruction; this workflow accepts one selected crop.
 
-Backend tests mock Meshy responses to verify crop input, consent, task submission/polling, cancellation, resuming, error redaction, and model downloads. Browser checks verify real geometry orbiting using the credited sample and explicitly mocked form submission. **Live Meshy generation is unverified until a private key is configured and an actual result is reviewed.**
+Automated tests mock Tripo responses to verify the crop upload, consent, task submission/polling, cancellation, resume without a second generation request, error redaction and model downloads. Browser checks verify real geometry orbiting using the credited sample and explicitly mocked form submission. **Live Tripo generation remains unverified until a private key is configured and an actual result is reviewed.**
 
-Sources: [Meshy image-to-3D API](https://docs.meshy.ai/en/api/image-to-3d), [Cesium Man source and notices](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CesiumMan).
+Sources: [Tripo image upload API](https://developers.tripo3d.ai/en/docs/files), [Tripo image-to-3D API](https://developers.tripo3d.ai/en/docs/generation-image-to-model/standard), [Tripo task query API](https://developers.tripo3d.ai/en/docs/task-query), [Cesium Man source and notices](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CesiumMan).
