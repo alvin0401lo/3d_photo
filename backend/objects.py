@@ -5,7 +5,7 @@ import json
 import math
 import struct
 import time
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, urljoin, urlparse
 
 import httpx
 from PIL import Image
@@ -84,21 +84,41 @@ def checked_json(response, action):
         raise ValueError("Tripo returned an invalid response. Check its dashboard before retrying.") from exc
 
 
-def download_model(client, url):
-    parsed = urlparse(url)
-    if parsed.scheme != "https" or parsed.hostname != "cdn.tripo3d.ai" or parsed.username or parsed.port not in (None, 443):
+def validate_download_url(url):
+    # Tripo returns signed regional data URLs as well as the docs' example CDN.
+    # Match DNS label boundaries, never arbitrary cloud-storage buckets.
+    try:
+        parsed = urlparse(url)
+        host = parsed.hostname or ""
+        trusted = host in {"cdn.tripo3d.ai", "cdn.tripo3d.com"} or host.endswith((".data.tripo3d.com", ".data.tripo3d.ai"))
+        valid = parsed.scheme == "https" and trusted and parsed.username is None and parsed.password is None and parsed.port in (None, 443)
+        valid = valid and not any(ord(c) < 33 or c == "\\" for c in url)
+    except ValueError:
+        valid = False
+    if not valid:
         raise ValueError("Tripo returned an unsupported model download address.")
+
+
+def download_model(client, url):
     # No Authorization header is sent to the asset CDN; download URLs remain backend-only.
-    with client.stream("GET", url, follow_redirects=False) as response:
-        if response.status_code != 200:
-            raise ValueError("The model download failed. Resume this existing task to fetch it again.")
-        data = bytearray()
-        for chunk in response.iter_bytes():
-            data.extend(chunk)
-            if len(data) > MAX_MODEL_BYTES:
-                raise ValueError("The 3D model exceeds the 64 MB viewer limit.")
-    validate_glb(bytes(data))
-    return bytes(data)
+    for hop in range(4):
+        validate_download_url(url)
+        with client.stream("GET", url, follow_redirects=False) as response:
+            if response.status_code in (301, 302, 303, 307, 308):
+                location = response.headers.get("location")
+                if not location or hop == 3:
+                    raise ValueError("The model download redirected too many times or returned no destination. Resume this existing task to fetch it again.")
+                url = urljoin(url, location)
+                continue
+            if response.status_code != 200:
+                raise ValueError("The model download failed. Resume this existing task to fetch it again.")
+            data = bytearray()
+            for chunk in response.iter_bytes():
+                data.extend(chunk)
+                if len(data) > MAX_MODEL_BYTES:
+                    raise ValueError("The 3D model exceeds the 64 MB viewer limit.")
+        validate_glb(bytes(data))
+        return bytes(data)
 
 
 def run(job, send, client=None, poll_interval=2):

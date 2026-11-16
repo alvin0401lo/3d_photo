@@ -125,8 +125,8 @@ def test_failed_task_resumes_without_a_second_post(client, monkeypatch):
     seen = []
     def handler(request):
         seen.append(request.method)
-        if request.url.host == 'cdn.tripo3d.ai': return httpx.Response(200, content=(store.ROOT / 'examples' / 'cesium-man.glb').read_bytes())
-        return httpx.Response(200, json={'code': 0, 'data': {'status': 'success', 'output': {'model_url': 'https://cdn.tripo3d.ai/model.glb'}}})
+        if request.url.host == 'tripo-data.rg1.data.tripo3d.com': return httpx.Response(200, content=(store.ROOT / 'examples' / 'cesium-man.glb').read_bytes())
+        return httpx.Response(200, json={'code': 0, 'data': {'status': 'success', 'output': {'model_url': 'https://tripo-data.rg1.data.tripo3d.com/model.glb?Signature=fixture'}}})
     with httpx.Client(transport=httpx.MockTransport(handler)) as remote:
         result = objects.run(resumed, lambda message: None, remote, poll_interval=0)
     assert 'POST' not in seen and result['remote_id'] == 'saved-task'
@@ -200,6 +200,55 @@ def test_glb_validation_and_asset_url_boundary():
     document += b' ' * (-len(document) % 4)
     broken = struct.pack('<4sIIII', b'glTF', 2, 20 + len(document), len(document), 0x4E4F534A) + document
     with pytest.raises(ValueError, match='self-contained'): objects.validate_glb(broken)
+
+
+@pytest.mark.parametrize('host', ['cdn.tripo3d.ai', 'cdn.tripo3d.com', 'tripo-data.rg1.data.tripo3d.com', 'tripo-data.rg2.data.tripo3d.ai'])
+def test_regional_model_download_and_checked_redirect(host):
+    model = (store.ROOT / 'examples' / 'cesium-man.glb').read_bytes()
+    seen = []
+    def handler(request):
+        seen.append(request)
+        assert request.method == 'GET' and 'authorization' not in request.headers
+        if len(seen) == 1:
+            return httpx.Response(302, headers={'location': f'https://{host}/model.glb?Signature=fixture'})
+        assert request.url.params['Signature'] == 'fixture'
+        return httpx.Response(200, content=model)
+    with httpx.Client(transport=httpx.MockTransport(handler)) as remote:
+        assert objects.download_model(remote, 'https://cdn.tripo3d.ai/start') == model
+    assert len(seen) == 2
+
+
+@pytest.mark.parametrize('url', [
+    'http://tripo-data.rg1.data.tripo3d.com/model.glb',
+    'https://127.0.0.1/model.glb', 'https://169.254.169.254/model.glb',
+    'https://tripo-data.rg1.data.tripo3d.com.evil.example/model.glb',
+    'https://evil-data.tripo3d.com/model.glb', 'https://evil.example/model.glb',
+    'https://user:secret@cdn.tripo3d.ai/model.glb',
+    'https://cdn.tripo3d.ai:8443/model.glb', 'https://cdn.tripo3d.ai:bad/model.glb',
+])
+def test_invalid_download_and_redirect_are_rejected_before_fetch(url):
+    with pytest.raises(ValueError): objects.download_model(None, url)
+    seen = []
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(302, headers={'location': url})
+    with httpx.Client(transport=httpx.MockTransport(handler)) as remote:
+        # httpx rejects malformed Location ports while constructing next_request,
+        # even with redirects disabled. run() redacts RequestError for the UI.
+        with pytest.raises((ValueError, httpx.RequestError)):
+            objects.download_model(remote, 'https://cdn.tripo3d.ai/start')
+    assert len(seen) == 1
+
+
+def test_model_redirect_loop_is_bounded():
+    seen = []
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(307, headers={'location': '/again'})
+    with httpx.Client(transport=httpx.MockTransport(handler)) as remote:
+        with pytest.raises(ValueError, match='redirected too many times'):
+            objects.download_model(remote, 'https://cdn.tripo3d.ai/start')
+    assert len(seen) == 4
 
 
 def test_parallel_startup_migrates_existing_subject_data_without_loss(client):

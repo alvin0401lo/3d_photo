@@ -39,6 +39,8 @@ Cancellation stops this app's polling and local processing. It does not send a p
 
 Previously saved Meshy tasks cannot be resumed through the Tripo integration. Completed models already saved in a project remain available.
 
+If a completed Tripo task previously failed with an unsupported download address, update the app and click **Resume existing Tripo task**. Downloads support Tripo CDN and regional `*.data.tripo3d.com` / `*.data.tripo3d.ai` addresses, with each redirect checked before fetching. Resume queries the saved task and downloads its model without creating another generation task.
+
 ## Accuracy and validation
 
 A single photo does not reveal the person's real sides/back. The reconstruction infers hidden surfaces, and face, hair, fingers, clothing, proportions and pose may differ. It is not an accurate body scan, identity guarantee, or rigged/animated avatar workflow. Multiple real views would provide stronger evidence for reconstruction; this workflow accepts one selected crop.
